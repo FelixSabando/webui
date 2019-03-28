@@ -18,6 +18,7 @@ export class CertificateListComponent {
   protected route_add: string[] = ['system', 'certificates', 'add'];
   protected route_add_tooltip: string = helptext_system_certificates.list.tooltip_add;
   protected route_success: string[] = [ 'system', 'certificates' ];
+  private entityJob: boolean = true;
 
   protected entityList: any;
 

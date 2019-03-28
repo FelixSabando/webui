@@ -5,7 +5,7 @@ import {distinctUntilChanged, debounceTime} from 'rxjs/operators';
 import { Component, OnInit, OnDestroy ,Input, ElementRef, ViewEncapsulation, ViewChild, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { DataSource } from '@angular/cdk/collections';
-import { MatPaginator, MatSort, PageEvent, MatSnackBar } from '@angular/material';
+import { MatPaginator, MatSort, PageEvent, MatSnackBar, MatDialog } from '@angular/material';
 import { TranslateService } from '@ngx-translate/core';
 
 import { T } from '../../../../translate-marker';
@@ -22,6 +22,8 @@ import { DialogService } from '../../../../services';
 import { ErdService } from '../../../../services/erd.service';
 import { StorageService } from '../../../../services/storage.service'
 import { CoreService, CoreEvent } from 'app/core/services/core.service';
+import { EntityJobComponent } from '../../../common/entity/entity-job/entity-job.component';
+
 
 
 
@@ -43,6 +45,7 @@ export interface InputTableConf {
   confirmDeleteDialog?: Object;
   checkbox_confirm?: any;
   checkbox_confirm_show?: any;
+  entityJob?: boolean;
   addRows?(entity: EntityTableComponent);
   changeEvent?(entity: EntityTableComponent);
   preInit?(entity: EntityTableComponent);
@@ -127,11 +130,12 @@ export class EntityTableComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected loaderOpen = false;
   public selected = [];
+  protected dialogRef: any;
 
   constructor(protected core: CoreService, protected rest: RestService, protected router: Router, protected ws: WebSocketService,
     protected _eRef: ElementRef, protected dialogService: DialogService, protected loader: AppLoaderService, 
     protected erdService: ErdService, protected translate: TranslateService, protected snackBar: MatSnackBar,
-    public sorter: StorageService) { 
+    public sorter: StorageService, private dialog: MatDialog) { 
       this.core.register({observerClass:this, eventName:"UserPreferencesChanged"}).subscribe((evt:CoreEvent) => {
         this.multiActionsIconsOnly = evt.data.preferIconsOnly;
       });
@@ -509,7 +513,22 @@ export class EntityTableComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loader.open();
         this.loaderOpen = true;
         const data = {};
-        if (this.conf.wsDelete) {
+        if (this.conf.wsDelete && this.conf.entityJob) {
+          console.log('yo');
+          this.dialogRef = this.dialog.open(EntityJobComponent, { data: { "title": T("Deleting...") }});
+          this.dialogRef.componentInstance.setDescription(T("Deleting..."));
+          this.dialogRef.componentInstance.setCall(this.conf.wsDelete, [id]);
+          this.dialogRef.componentInstance.submit();
+          this.dialogRef.componentInstance.success.subscribe((res) => {
+            this.dialog.closeAll();
+            this.getData()
+          });
+          this.dialogRef.componentInstance.failure.subscribe((res) => {
+            new EntityUtils().handleWSError(this, res);
+          });
+        }         
+        else if (this.conf.wsDelete) {
+          console.log(this.conf, id)
           this.busy = this.ws.call(this.conf.wsDelete, [id]).subscribe(
             (resinner) => { this.getData() },
             (resinner) => {
@@ -518,7 +537,7 @@ export class EntityTableComponent implements OnInit, AfterViewInit, OnDestroy {
             }
           );
         } else {
-          this.busy = this.rest.delete(this.conf.resource_name + '/' + id, data).subscribe(
+            this.busy = this.rest.delete(this.conf.resource_name + '/' + id, data).subscribe(
             (resinner) => {
               this.getData();
             },
