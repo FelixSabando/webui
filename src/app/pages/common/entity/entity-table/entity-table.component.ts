@@ -514,9 +514,7 @@ export class EntityTableComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loaderOpen = true;
         const data = {};
         if (this.conf.wsDelete && this.conf.entityJob) {
-          console.log('yo');
-          this.dialogRef = this.dialog.open(EntityJobComponent, { data: { "title": T("Deleting...") }});
-          this.dialogRef.componentInstance.setDescription(T("Deleting..."));
+          this.dialogRef = this.dialog.open(EntityJobComponent, { data: { "title": T("Deleting...") }, disableClose: true});
           this.dialogRef.componentInstance.setCall(this.conf.wsDelete, [id]);
           this.dialogRef.componentInstance.submit();
           this.dialogRef.componentInstance.success.subscribe((res) => {
@@ -528,7 +526,6 @@ export class EntityTableComponent implements OnInit, AfterViewInit, OnDestroy {
           });
         }         
         else if (this.conf.wsDelete) {
-          console.log(this.conf, id)
           this.busy = this.ws.call(this.conf.wsDelete, [id]).subscribe(
             (resinner) => { this.getData() },
             (resinner) => {
